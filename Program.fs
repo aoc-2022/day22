@@ -157,8 +157,10 @@ type Area(area: Map<Pos, Block>, south: int, east: int) =
                 let dir = WEST 
                 this.NextCubeTile cubeInfo (x,y) dir
             | NORTH -> // at pole, just wrapping
-                let next = x, (if y < 0 then south else y)
-                this.NextCubeTile cubeInfo next dir
+                let x = cubeInfo.PrePoleMaxX - x
+                let y = cubeInfo.EquatorMinY
+                let dir = SOUTH 
+                this.NextCubeTile cubeInfo (x,y) dir
 
 
 
