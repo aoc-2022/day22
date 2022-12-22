@@ -347,8 +347,32 @@ let calcHackyPos (x: int, y: int, dir: Dir) : Pos * Dir =
         | 'd' -> (y + 100, 50 - x)
         | 'e' -> (x + 50, y + 100)
         | 'f' -> (y, 50 - x + 150)
-
+        
+    let dir =
+        match side with
+        | 'a' -> dir
+        | 'b' -> dir |> opposite
+        | 'c' -> dir
+        | 'd' -> dir |> turnLeft
+        | 'e' -> dir
+        | 'f' -> dir |> turnLeft
+        
     (x + 1, y + 1), dir
 
 let hackyPos = calcHackyPos (64, 94, NORTH)
 printfn $"hack pos = {hackyPos}"
+
+let hackyScore ((x,y),dir) : int =
+    let dirScore =
+        match dir with
+        | EAST -> 0
+        | SOUTH -> 1
+        | WEST -> 2
+        | NORTH -> 3
+
+    1000*y + 4*x + dirScore
+    
+let answer2 = hackyScore hackyPos
+
+printfn $"ANSWER 2: {answer2}"
+
