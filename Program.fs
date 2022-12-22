@@ -83,84 +83,100 @@ type Area(area: Map<Pos, Block>, south: int, east: int) =
                 this.NextTile next dir
 
     member this.NextCubeTile (cubeInfo: CubeInfo) ((x, y): Pos) (dir: Dir) : Dir * Pos =
-        // printfn "NextCubeTile"
-        let (x, y) = nextPos dir (x, y)
-
-        if area.ContainsKey((x, y)) then
-            dir, (x, y)
+        if area.ContainsKey(nextPos dir (x, y)) then
+            dir, nextPos dir (x, y)
         else
+            let orig = (x,y)
             match dir with
             | EAST when cubeInfo.EquatorMinY > y -> // OK
                 printfn $"Equator: North {(x, y)} {cubeInfo}"
-                let y = cubeInfo.maxY - y
-                let dir = dir |> turnLeft |> turnLeft
-                this.NextCubeTile cubeInfo (x,y) dir
-            | EAST when cubeInfo.EquatorMaxY < y -> // OK
+                let y = cubeInfo.maxY - y 
+                let x = cubeInfo.maxX
+                let dir = WEST
+                printfn $"EAST ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | EAST when cubeInfo.EquatorMaxY < y -> // OK 
                 printfn $"Equator: South {(x, y)} {cubeInfo}"
-                let x = y - cubeInfo.EquatorMaxY + cubeInfo.PoleMaxX
-                let y = cubeInfo.EquatorMaxY
-                let dir = NORTH 
-                this.NextCubeTile cubeInfo (x,y) dir
-            | EAST -> // OK
+                let x = cubeInfo.PoleMaxX
+                let y = cubeInfo.maxY - y
+                let dir = WEST
+                printfn $"EAST ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | EAST -> // OK 
                 printfn $"Equator: At {(x, y)} cubeInfo={cubeInfo}"
-                let x = x + cubeInfo.EquatorMaxY - y
+                let x = cubeInfo.EquatorMaxY - y + cubeInfo.PoleMaxX + 1
                 let y = cubeInfo.EquatorMaxY + 1
                 let dir = SOUTH
-                this.NextCubeTile cubeInfo (x, y) dir
-            | WEST when y < cubeInfo.EquatorMinY -> // OK 
+                printfn $"EAST ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | WEST when y < cubeInfo.EquatorMinY -> // OK
                 printfn $"Equator: South {(x, y)} {cubeInfo}"
                 let x = cubeInfo.PrePoleMinX + y
                 let y = cubeInfo.EquatorMinY
                 let dir = SOUTH 
-                this.NextCubeTile cubeInfo (x,y) dir
+                printfn $"WEST ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
             | WEST when y > cubeInfo.EquatorMaxY -> // OK
                 printfn $"Equator: South {(x, y)} {cubeInfo}"
-                let x = cubeInfo.PrePoleMinX + y
+                let x = cubeInfo.PoleMinX + (y - cubeInfo.EquatorMaxY)
                 let y = cubeInfo.EquatorMaxY
                 let dir = NORTH 
-                this.NextCubeTile cubeInfo (x,y) dir
-            | WEST -> // OK (just wrapping)
-                let next = (if x < 0 then east else x), y
-                this.NextCubeTile cubeInfo next dir
-            | SOUTH when x < cubeInfo.PrePoleMinX -> // OK // prePrePole, prePole, pole, PostPole
+                printfn $"WEST ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | WEST -> // OK
+                let x = cubeInfo.maxX - (y - cubeInfo.EquatorMinY)
+                let y = cubeInfo.maxY
+                let dir = NORTH 
+                printfn $"WEST ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | SOUTH when x < cubeInfo.PrePoleMinX -> // OK 
                 let x = cubeInfo.PoleMaxX - x
                 let y = cubeInfo.maxY
                 let dir = NORTH 
-                this.NextCubeTile cubeInfo (x,y) dir
+                printfn $"SOUTH ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
             | SOUTH when x < cubeInfo.PoleMinX -> // OK
-                let y = cubeInfo.PrePoleMaxX - x + cubeInfo.EquatorMaxY + 1
+                let y = cubeInfo.EquatorMaxY + (cubeInfo.PoleMinX - x)
                 let x = cubeInfo.PoleMinX
                 let dir = EAST 
-                this.NextCubeTile cubeInfo (x,y) dir
-            | SOUTH when x > cubeInfo.PoleMaxX ->
-                let y = cubeInfo.EquatorMaxY + x - cubeInfo.PoleMaxX
-                let x = cubeInfo.PoleMaxX
-                let dir = WEST 
-                this.NextCubeTile cubeInfo (x,y) dir
-            | SOUTH -> // pole
-                let x = cubeInfo.PrePoleMaxX - x
+                printfn $"SOUTH ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | SOUTH when x > cubeInfo.PoleMaxX -> // OK 
+                let y = cubeInfo.EquatorMinY + cubeInfo.maxX - x 
+                let x = 0
+                let dir = EAST
+                printfn $"SOUTH ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | SOUTH -> // OK
+                let x = cubeInfo.PoleMaxX - x
                 let y = cubeInfo.EquatorMaxY
                 let dir = NORTH 
-                this.NextCubeTile cubeInfo (x,y) dir
-            | NORTH when x < cubeInfo.PrePoleMinX -> // prePrePole, prePole, pole, PostPole
+                printfn $"SOUTH ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | NORTH when x < cubeInfo.PrePoleMinX -> // OK
                 let x = cubeInfo.PoleMaxX - x
                 let y = 0
                 let dir = SOUTH 
-                this.NextCubeTile cubeInfo (x,y) dir
-            | NORTH when x < cubeInfo.PoleMinX ->
-                let y = cubeInfo.EquatorMinY - cubeInfo.PoleMinX + x
+                printfn $"NORTH ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | NORTH when x < cubeInfo.PoleMinX -> // OK
+                let y = x - cubeInfo.PrePoleMinX
                 let x = cubeInfo.PoleMinX
                 let dir = EAST
-                this.NextCubeTile cubeInfo (x,y) dir
+                printfn $"NORTH ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
             | NORTH when x > cubeInfo.PoleMaxX ->
-                let x = cubeInfo.EquatorMinY - x + cubeInfo.PoleMaxX
-                let dir = WEST 
-                this.NextCubeTile cubeInfo (x,y) dir
-            | NORTH -> // at pole, just wrapping
-                let x = cubeInfo.PrePoleMaxX - x
+                let y = cubeInfo.maxX - x + cubeInfo.EquatorMinY
+                let x = cubeInfo.PoleMaxX
+                let dir = WEST
+                printfn $"NORTH ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
+            | NORTH ->
+                let x = cubeInfo.PoleMaxX - x 
                 let y = cubeInfo.EquatorMinY
                 let dir = SOUTH 
-                this.NextCubeTile cubeInfo (x,y) dir
+                printfn $"NORTH ({orig} -> {(x,y)},{dir}"
+                dir,(x,y)
 
 
 
@@ -224,7 +240,7 @@ let parse (s: string list) : Area * Instructions =
     Area(area, south, east), instructions
 
 let area, instructions =
-    File.ReadAllLines "/tmp/aoc/input.t" |> Array.toList |> parse
+    File.ReadAllLines "/tmp/aoc/input" |> Array.toList |> parse
 
 area |> (printfn "%A")
 instructions |> printfn "%A"
@@ -239,7 +255,7 @@ type State(cubeInfo: CubeInfo, area: Area, pos: Pos, dir: Dir) =
     member this.Dir = dir
 
     member this.ApplyInstruction(inst: Inst) =
-        // printfn $"ApplyInstruction {inst}"
+        printfn $"ApplyInstruction  {inst} {pos} {dir}"
         match inst with
         | Left ->
             printfn $"turn to: {turnLeft dir}"
@@ -260,22 +276,20 @@ type State(cubeInfo: CubeInfo, area: Area, pos: Pos, dir: Dir) =
                     this
 
     member this.ApplyCubeInstruction(inst: Inst) =
-        // printfn $"ApplyInstruction {inst}"
+        printfn $"ApplyCubeInstruction {inst} {pos} {dir}"
         match inst with
         | Left ->
-            printfn $"turn to: {turnLeft dir}"
             State(cubeInfo, area, pos, turnLeft dir)
         | Right ->
-            printfn $"turn to: {turnRight dir}"
             State(cubeInfo, area, pos, turnRight dir)
         | Steps n ->
             if n = 0 then
                 this
             else
                 let dir, nextPos = area.NextCubeTile cubeInfo pos dir
+                printfn $"  got {pos} -> {nextPos}"
 
                 if area.Available nextPos then
-                    printfn $"Move to: {nextPos} facing:{dir}"
                     State(cubeInfo, area, nextPos, dir).ApplyCubeInstruction(Steps(n - 1))
                 else
                     this
@@ -293,8 +307,9 @@ let solve1 (area: Area) (instructions: Instructions) =
         if instructions.Inst.IsEmpty then
             state
         else
-            // printfn $"solve1 moving: {state}"
+            printfn $"solve1 moving: {state} {instructions.Inst}"
             let state = state.ApplyInstruction(instructions.Inst.Head)
+            printfn $"  -> {state}"
             solve1 state (Instructions(instructions.Inst.Tail))
 
     solve1 state instructions
@@ -302,15 +317,16 @@ let solve1 (area: Area) (instructions: Instructions) =
 let solve2 (area: Area) (instructions: Instructions) =
     let state = initState area
 
-    let rec solve1 (state: State) (instructions: Instructions) =
+    let rec solve (state: State) (instructions: Instructions) =
         if instructions.Inst.IsEmpty then
             state
         else
-            // printfn $"solve1 moving: {state}"
+            printfn $"solve moving: {instructions.Inst.Head}  {state}"
             let state = state.ApplyCubeInstruction(instructions.Inst.Head)
-            solve1 state (Instructions(instructions.Inst.Tail))
+            printfn $"  -> {state}"
+            solve state (Instructions(instructions.Inst.Tail))
 
-    solve1 state instructions
+    solve state instructions
 
 
 // let state = solve1 area instructions
@@ -318,6 +334,8 @@ let solve2 (area: Area) (instructions: Instructions) =
 // printfn $"state = {state}"
 
 let state = solve2 area instructions
+
+printfn $"Final state 2 : {state}"
 
 let score (state: State) =
     let x = fst state.Pos + 1
