@@ -30,6 +30,13 @@ type Inst =
     | Right
     | Steps of int
 
+type CubeInfo (equatorMinY,equatorMaxY,poleMinX,poleMaxX) =
+    member this.EquatorMaxY = equatorMaxY
+    member this.EquatorMinY = equatorMinY
+    member this.PoleMinX = poleMinX
+    member this.PoleMaxX = poleMaxX
+    override this.ToString() = $"CubeInfo(eq:{equatorMinY}-{equatorMaxY} pole:{poleMinX}-{poleMaxX})"
+
 type Pos = int*int
 type Instructions(s:Inst list) =
     member this.Inst = s
@@ -64,41 +71,35 @@ type Area(area:Map<Pos,Block>, south: int, east: int) =
             | NORTH ->
                 let next = x,(if y < 0 then south else y)
                 this.NextTile next dir
-    member this.NextCubeTile ((x,y):Pos) (dir:Dir) : Dir*Pos =
+    member this.NextCubeTile (cubeInfo:CubeInfo) ((x,y):Pos) (dir:Dir) : Dir*Pos =
         let (x,y) = nextPos dir (x,y)
         if area.ContainsKey((x,y)) then dir,(x,y)
         else
             match dir with
             | EAST ->
                 let next = (if x > east then -1 else x),y
-                this.NextCubeTile next dir
+                this.NextCubeTile cubeInfo next dir
             | WEST ->
                 let next = (if x < 0 then east else x),y
-                this.NextCubeTile next dir
+                this.NextCubeTile cubeInfo next dir
             | SOUTH ->
                 let next = x,(if y > south then -1 else y)
-                this.NextCubeTile next dir
+                this.NextCubeTile cubeInfo next dir
             | NORTH ->
                 let next = x,(if y < 0 then south else y)
-                this.NextCubeTile next dir
+                this.NextCubeTile cubeInfo next dir
                 
     override this.ToString() = $"Area({area})"
 
-type CubeInfo (equatorMinY,equatorMaxY,poleMinX,poleMaxX) =
-    member this.EquatorMaxY = equatorMaxY
-    member this.EquatorMinY = equatorMinY
-    member this.PoleMinX = poleMinX
-    member this.PoleMaxX = poleMaxX
-    override this.ToString() = $"CubeInfo(eq:{equatorMinY}-{equatorMaxY} pole:{poleMinX}-{poleMaxX})"
     
-    static member init (area:Area) =
-        let maxX = area.Area.Keys |> Seq.map fst |> Seq.max
-        let maxY = area.Area.Keys |> Seq.map snd |> Seq.max
-        let equatorMinY = area.Area.Keys |> Seq.filter (fun (x,y) -> x = maxX) |> Seq.map snd |> Seq.min
-        let equatorMaxY = area.Area.Keys |> Seq.filter (fun (x,y) -> x = maxX) |> Seq.map snd |> Seq.max
-        let poleMinX = area.Area.Keys |> Seq.filter (fun (x,y) -> y = maxY) |> Seq.map fst |> Seq.min
-        let poleMaxX = area.Area.Keys |> Seq.filter (fun (x,y) -> y = maxY) |> Seq.map fst |> Seq.max
-        CubeInfo (equatorMinY,equatorMaxY,poleMinX,poleMaxX)
+let initCubeInfo (area:Area) =
+    let maxX = area.Area.Keys |> Seq.map fst |> Seq.max
+    let maxY = area.Area.Keys |> Seq.map snd |> Seq.max
+    let equatorMinY = area.Area.Keys |> Seq.filter (fun (x,y) -> x = maxX) |> Seq.map snd |> Seq.min
+    let equatorMaxY = area.Area.Keys |> Seq.filter (fun (x,y) -> x = maxX) |> Seq.map snd |> Seq.max
+    let poleMinX = area.Area.Keys |> Seq.filter (fun (x,y) -> y = maxY) |> Seq.map fst |> Seq.min
+    let poleMaxX = area.Area.Keys |> Seq.filter (fun (x,y) -> y = maxY) |> Seq.map fst |> Seq.max
+    CubeInfo (equatorMinY,equatorMaxY,poleMinX,poleMaxX)
 
 
 let rec parseInstructions (s:String) : Inst list =
@@ -135,7 +136,7 @@ printfn $"start {area.StartTile}"
 
 printfn 
 
-type State(area:Area, pos:Pos, dir:Dir) =
+type State(cubeInfo: CubeInfo, area:Area, pos:Pos, dir:Dir) =
     member this.Area = area
     member this.Pos = pos
     member this.Dir = dir
@@ -144,17 +145,17 @@ type State(area:Area, pos:Pos, dir:Dir) =
         match inst with
         | Left ->
             printfn $"turn to: {turnLeft dir}"
-            State(area,pos,turnLeft dir)
+            State(cubeInfo,area,pos,turnLeft dir)
         | Right ->
             printfn $"turn to: {turnRight dir}"
-            State(area,pos,turnRight dir)
+            State(cubeInfo,area,pos,turnRight dir)
         | Steps n ->
             if n = 0 then this
             else
-                let dir,nextPos = area.NextCubeTile pos dir
+                let dir,nextPos = area.NextCubeTile cubeInfo pos dir
                 if area.Available nextPos then
                     printfn $"Move to: {nextPos} {dir}"
-                    State(area,nextPos,dir).ApplyInstruction (Steps (n-1))
+                    State(cubeInfo,area,nextPos,dir).ApplyInstruction (Steps (n-1))
                 else
                     this
                     
@@ -163,23 +164,25 @@ type State(area:Area, pos:Pos, dir:Dir) =
         match inst with
         | Left ->
             printfn $"turn to: {turnLeft dir}"
-            State(area,pos,turnLeft dir)
+            State(cubeInfo,area,pos,turnLeft dir)
         | Right ->
             printfn $"turn to: {turnRight dir}"
-            State(area,pos,turnRight dir)
+            State(cubeInfo,area,pos,turnRight dir)
         | Steps n ->
             if n = 0 then this
             else
-                let dir,nextPos = area.NextCubeTile pos dir
+                let dir,nextPos = area.NextCubeTile cubeInfo pos dir
                 if area.Available nextPos then
                     printfn $"Move to: {nextPos} facing:{dir}"
-                    State(area,nextPos,dir).ApplyCubeInstruction (Steps (n-1))
+                    State(cubeInfo,area,nextPos,dir).ApplyCubeInstruction (Steps (n-1))
                 else
                     this 
 
     override this.ToString () = $"State ({pos},{dir}"
 
-let initState (area:Area) = State(area, area.StartTile, EAST)
+let initState (area:Area) =
+    let cubeInfo = initCubeInfo area
+    State(cubeInfo, area, area.StartTile, EAST)
  
 let solve1 (area:Area) (instructions:Instructions) =
     let state = initState area
@@ -223,6 +226,6 @@ let score (state:State) =
 let task1 = score state
 printfn $"RES 1 {task1}"
 
-let cubeInfo = CubeInfo.init area
+let cubeInfo = initCubeInfo area
 
 cubeInfo |> printfn "%A"
