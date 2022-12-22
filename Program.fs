@@ -118,12 +118,12 @@ type Area(area: Map<Pos, Block>, south: int, east: int) =
                 dir,(x,y)
             | WEST when y > cubeInfo.EquatorMaxY -> // OK
                 printfn $"Equator: South {(x, y)} {cubeInfo}"
-                let x = cubeInfo.PoleMinX + (y - cubeInfo.EquatorMaxY)
+                let x = cubeInfo.maxY - y + cubeInfo.PrePoleMinX
                 let y = cubeInfo.EquatorMaxY
                 let dir = NORTH 
                 printfn $"WEST ({orig} -> {(x,y)},{dir}"
                 dir,(x,y)
-            | WEST -> // OK
+            | WEST -> // OK (?) /// TODO VERIFY 
                 let x = cubeInfo.maxX - (y - cubeInfo.EquatorMinY)
                 let y = cubeInfo.maxY
                 let dir = NORTH 
@@ -333,27 +333,32 @@ let solve2 (area: Area) (instructions: Instructions) =
 
 // printfn $"state = {state}"
 
-let state = solve2 area instructions
+let runAll () =
+    let state = solve2 area instructions
 
-printfn $"Final state 2 : {state}"
+    printfn $"Final state 2 : {state}"
 
-let score (state: State) =
-    let x = fst state.Pos + 1
-    let y = snd state.Pos + 1
-    let dir = state.Dir
+    let score (state: State) =
+        let x = fst state.Pos + 1
+        let y = snd state.Pos + 1
+        let dir = state.Dir
 
-    let dirScore =
-        match dir with
-        | EAST -> 0
-        | SOUTH -> 1
-        | WEST -> 2
-        | NORTH -> 3
+        let dirScore =
+            match dir with
+            | EAST -> 0
+            | SOUTH -> 1
+            | WEST -> 2
+            | NORTH -> 3
 
-    (y * 1000) + (4 * x) + dirScore
+        (y * 1000) + (4 * x) + dirScore
 
-let task1 = score state
-printfn $"RES 1 {task1}"
+    let task1 = score state
+    printfn $"RES 1 {task1}"
 
 let cubeInfo = initCubeInfo area
 
 cubeInfo |> printfn "%A"
+
+area.NextCubeTile cubeInfo (15,10) EAST |> printfn "%A"
+
+// runAll () 
